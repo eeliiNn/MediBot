@@ -13,17 +13,6 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Abre **http://localhost:5000** → verás un chat estilo WhatsApp.
-
-Otras formas de probarlo:
-
-| Comando | Para qué sirve |
-|---|---|
-| `python consola.py` | Chatear desde la terminal |
-| `python test_chatbot.py` | Pruebas automáticas del bot (no tocan tus datos) |
-| `python test_vonage.py` | Prueba del canal de Vonage, sin internet |
-| `python probar_vonage.py <número>` | Envía un WhatsApp de prueba por Vonage |
-
 ## 💬 Qué puede hacer
 
 | Función | Ejemplo de lo que escribe el usuario |
@@ -84,80 +73,3 @@ consola.py        Chat por terminal
 test_chatbot.py   Pruebas automáticas
 templates/index.html   Simulador de WhatsApp
 ```
-
-## 🎬 Guion sugerido para la defensa (3–4 minutos)
-
-1. Abrir el simulador y escribir `hola` → se presenta el bot y pregunta el nombre.
-2. Registrar un medicamento en una sola frase: `Tomo ibuprofeno 400 mg 3 veces al día por 5 días` → mostrar la confirmación y los horarios generados.
-3. Agendar una cita: `tengo cita con el dentista mañana a las 3pm`.
-4. En el panel de demostración pulsar **+1 hora** hasta que llegue el recordatorio de la dosis.
-5. Responder `posponer 10 minutos`, adelantar el reloj y mostrar el segundo aviso; luego `tomé`.
-6. Pulsar **+1 día** para mostrar el aviso de cita "1 día antes" y escribir `mi progreso`.
-7. Mostrar el código: `nlu.py` (intenciones/entidades) y `recordatorios.py` (cómo decide cuándo avisar).
-
-## 📲 Conectar con WhatsApp real
-
-El bot tiene 3 modos (`MODO` en el archivo `.env`): `local` (simulador), `vonage` y `twilio`.
-
-### Opción A · Vonage (Messages API Sandbox)
-
-1. **Cuenta:** crea una cuenta gratis en https://dashboard.nexmo.com (el sandbox es gratuito).
-2. **Credenciales:** en la página principal del dashboard copia tu **API key** y tu **API secret**.
-3. **Unirte al sandbox:** menú **Messages API Sandbox** → junto a WhatsApp pulsa **Add to sandbox** y sigue las instrucciones: envías, desde tu WhatsApp, el mensaje con la frase única que te muestra al número del sandbox. Eso agrega tu número a la lista permitida.
-4. **Archivo `.env`:**
-   ```
-   MODO=vonage
-   VONAGE_API_KEY=<tu api key>
-   VONAGE_API_SECRET=<tu api secret>
-   VONAGE_WHATSAPP_NUMBER=<el número "from" que aparece en el sandbox>
-   VONAGE_SANDBOX=true
-   ```
-5. **Probar el envío** (sin servidor todavía):
-   ```
-   python probar_vonage.py 50371110776 "Hola desde MediBot"
-   ```
-   (tu número con código de país, sin `+`). Si llega a tu WhatsApp, el envío funciona.
-6. **Servidor y túnel** (dos terminales):
-   ```
-   python app.py
-   .\cloudflared.exe tunnel --url http://localhost:5000
-   ```
-   Copia la URL `https://algo.trycloudflare.com`.
-7. **Webhooks:** en la misma página *Messages API Sandbox* → **Configure webhooks**:
-   - **Inbound:** `https://algo.trycloudflare.com/vonage/inbound`
-   - **Status:** `https://algo.trycloudflare.com/vonage/status`
-   - Pulsa **Save webhooks**.
-8. **Probar:** escríbele `hola` al número del sandbox desde tu WhatsApp.
-
-> La URL de cloudflared **cambia cada vez** que lo reinicias: pega la nueva en los dos webhooks.
-> Límites del sandbox: **100 mensajes al mes** y 1 por segundo. Ahorra mensajes: haz tus pruebas con el simulador
-> local y usa WhatsApp real solo para ensayar y para la defensa.
-> Los recordatorios solo llegan si escribiste al bot en las últimas 24 horas (regla de WhatsApp).
-> Una cuenta de Vonage nueva puede pedir verificación; hazla con tiempo.
-
-**Si algo falla, mira la terminal de `python app.py`:**
-
-| Síntoma | Causa probable |
-|---|---|
-| No aparece `POST /vonage/inbound` en la terminal | Webhook sin guardar, URL del túnel vieja, o túnel apagado |
-| `[vonage] Error 401` | API key o secret mal copiados en `.env` |
-| `[vonage] Error 422` | Tu número no está unido al sandbox, o pasaron más de 24 h sin escribirle al bot |
-| `[vonage] Error 429` | Se acabaron los 100 mensajes del mes |
-| `MODO=local: llegó un mensaje...` | Olvidaste poner `MODO=vonage` en `.env` |
-
-**Tip para mostrar un recordatorio real en vivo:** registra un medicamento con una hora 2–3 minutos en el futuro
-(por ejemplo `Registrar ibuprofeno 400 mg a las 3:47 pm`, con la hora real de tu computadora) y espera.
-
-Para probar el canal de Vonage sin internet: `python test_vonage.py`.
-
-### Opción B · Twilio Sandbox
-
-1. En `.env` pon `MODO=twilio` y copia `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_PHONE_NUMBER`.
-2. `python app.py` y, en otra terminal, `.\cloudflared.exe tunnel --url http://localhost:5000`.
-3. En Twilio → *Try WhatsApp → Sandbox settings*, pega la URL en **When a message comes in** (POST). Funciona con `/` o `/whatsapp`.
-4. Escribe `join <tu-código>` al número del sandbox.
-
-> 🔒 Nunca subas tu `.env` ni pegues claves en documentos o capturas: son como contraseñas.
-
-## ⚠️ Nota
-MediBot es un proyecto académico de recordatorios; no sustituye la indicación de un médico ni da consejos médicos.
