@@ -1,0 +1,5 @@
+flask>=3.0
+python-dotenv>=1.0
+# Opcionales:
+# twilio>=9.0                  (solo si usas Twilio)
+PyJWT>=2.8
